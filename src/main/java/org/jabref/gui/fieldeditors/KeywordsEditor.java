@@ -12,6 +12,7 @@ import javafx.scene.Parent;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.HBox;
 
 import org.jabref.gui.ClipBoardManager;
@@ -56,6 +57,8 @@ public class KeywordsEditor extends HBox implements FieldEditorFX {
                   .root(this)
                   .load();
 
+
+
         this.viewModel = new KeywordsEditorViewModel(
                 field,
                 suggestionProvider,
@@ -80,6 +83,7 @@ public class KeywordsEditor extends HBox implements FieldEditorFX {
         keywordTagsField.getEditor().focusedProperty().addListener((observable, oldValue, newValue) -> keywordTagsField.pseudoClassStateChanged(FOCUSED, newValue));
 
         String keywordSeparator = String.valueOf(viewModel.getKeywordSeparator());
+
         keywordTagsField.getEditor().setOnKeyReleased(event -> {
             if (event.getText().equals(keywordSeparator)) {
                 keywordTagsField.commit();
@@ -87,10 +91,23 @@ public class KeywordsEditor extends HBox implements FieldEditorFX {
             }
         });
 
+        KeyCombination pasteCombination = KeyCombination.keyCombination("Ctrl+V");
+        keywordTagsField.getEditor().setOnKeyPressed(event -> {
+            if (pasteCombination.match(event)) {
+                String clipboardContent = ClipBoardManager.getContents();
+                if (clipboardContent != null && !clipboardContent.isEmpty()) {
+                    keywordTagsField.getTags().add(new Keyword(clipboardContent.trim()));
+                    keywordTagsField.getEditor().clear();
+                    event.consume();
+                }
+            }
+        });
+
         Bindings.bindContentBidirectional(keywordTagsField.getTags(), viewModel.keywordListProperty());
     }
 
     private Node createTag(Keyword keyword) {
+
         Label tagLabel = new Label();
         tagLabel.setText(keywordTagsField.getConverter().toString(keyword));
         tagLabel.setGraphic(IconTheme.JabRefIcons.REMOVE_TAGS.getGraphicNode());
